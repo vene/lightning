@@ -6,6 +6,7 @@
 import numpy as np
 
 from sklearn.externals.six.moves import xrange
+from sklearn.utils.class_weight import compute_sample_weight
 
 from .base import BaseClassifier, BaseRegressor
 from .dataset_fast import get_dataset
@@ -128,13 +129,15 @@ class SAGClassifier(BaseClassifier, _BaseSAG):
     """
 
     def __init__(self, eta='auto', alpha=1.0, beta=0.0, loss="smooth_hinge",
-                 penalty=None, gamma=1.0, max_iter=10, n_inner=1.0, tol=1e-3,
-                 verbose=0, callback=None, random_state=None):
+                 penalty=None, class_weight=None, gamma=1.0, max_iter=10,
+                 n_inner=1.0, tol=1e-3, verbose=0, callback=None,
+                 random_state=None):
         self.eta = eta
         self.alpha = alpha
         self.beta = beta
         self.loss = loss
         self.penalty = penalty
+        self.class_weight = class_weight
         self.gamma = gamma
         self.max_iter = max_iter
         self.n_inner = n_inner
@@ -160,6 +163,14 @@ class SAGClassifier(BaseClassifier, _BaseSAG):
             raise ValueError('Penalties in SAGClassifier. Please use '
                              'SAGAClassifier instead.'
                              '.')
+
+        if self.class_weight is not None:
+            cw_sample_weight = compute_sample_weight(self.class_weight, y)
+            if sample_weight is not None:
+                sample_weight *= cw_sample_weight
+            else:
+                sample_weight = cw_sample_weight
+
         self._set_label_transformers(y)
         y_binary = self.label_binarizer_.transform(y).astype(np.float64)
         return self._fit(X, y_binary, sample_weight)
@@ -209,12 +220,14 @@ class SAGAClassifier(SAGClassifier):
     """
 
     def __init__(self, eta='auto', alpha=1.0, beta=0.0, loss="smooth_hinge",
-                 penalty=None, gamma=1.0,  max_iter=10, n_inner=1.0,
-                 tol=1e-3, verbose=0, callback=None, random_state=None):
+                 penalty=None, class_weight=None, gamma=1.0,  max_iter=10,
+                 n_inner=1.0, tol=1e-3, verbose=0, callback=None,
+                 random_state=None):
             super(SAGAClassifier, self).__init__(
                 eta=eta, alpha=alpha, beta=beta, loss=loss, penalty=penalty,
-                gamma=gamma, max_iter=max_iter, n_inner=n_inner, tol=tol,
-                verbose=verbose, callback=callback, random_state=random_state)
+                class_weight=class_weight, gamma=gamma, max_iter=max_iter,
+                n_inner=n_inner, tol=tol, verbose=verbose, callback=callback,
+                random_state=random_state)
             self.is_saga = True
 
 
